@@ -7,10 +7,12 @@ import { useEventPhotos } from '@/lib/use-event-photos'
 import EventHeader from '@/components/EventHeader'
 import PhotoGrid from '@/components/PhotoGrid'
 import PresentationSlideshow from '@/components/PresentationSlideshow'
+import { eventUploadPath } from '@/lib/event-domain'
 
 interface Props {
   event: Event
   shareUrl: string
+  eventSlug: string
   initialPhotos: Photo[]
   children?: React.ReactNode
   showGallery?: boolean
@@ -20,6 +22,7 @@ interface Props {
 export default function EventPage({
   event,
   shareUrl,
+  eventSlug,
   initialPhotos,
   children,
   showGallery = true,
@@ -36,6 +39,7 @@ export default function EventPage({
       <EventHeader
         event={event}
         shareUrl={shareUrl}
+        eventSlug={eventSlug}
         hasPhotos={photos.length > 0}
         onOpenPresentation={() => setPresentationOpen(true)}
       />
@@ -48,7 +52,7 @@ export default function EventPage({
         <div className="fixed bottom-0 inset-x-0 p-4 pb-6 bg-gradient-to-t from-[var(--cream)] via-[var(--cream)] to-transparent pointer-events-none">
           <div className="max-w-lg mx-auto pointer-events-auto">
             <Link
-              href="/upload"
+              href={eventUploadPath(eventSlug)}
               className="btn-gold block w-full py-4 rounded-2xl text-center font-script text-2xl transition-transform"
             >
               Enviar Minha Foto

@@ -1,8 +1,21 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 
-/** Subdomains reserved for infrastructure — not usable as event slugs. */
-export const RESERVED_SUBDOMAINS = new Set(['www', 'admin', 'api', 'foto-lembranca', ''])
+/** Slugs reserved for app routes — not usable as event identifiers. */
+export const RESERVED_SLUGS = new Set([
+  'www',
+  'admin',
+  'api',
+  'platform',
+  'gallery',
+  'upload',
+  'not-found',
+  '_next',
+  '',
+])
+
+/** @deprecated Use RESERVED_SLUGS */
+export const RESERVED_SUBDOMAINS = RESERVED_SLUGS
 
 const MAX_SUFFIX_ATTEMPTS = 100
 
@@ -11,7 +24,7 @@ export function normalizeSubdomain(input: string): string {
 }
 
 export function isReservedSubdomain(subdomain: string): boolean {
-  return RESERVED_SUBDOMAINS.has(subdomain)
+  return RESERVED_SLUGS.has(subdomain)
 }
 
 export class SubdomainValidationError extends Error {
@@ -33,10 +46,10 @@ export async function allocateUniqueSubdomain(
   const requestedSubdomain = normalizeSubdomain(rawSubdomain)
 
   if (!requestedSubdomain) {
-    throw new SubdomainValidationError('Subdomínio inválido.')
+    throw new SubdomainValidationError('Identificador inválido.')
   }
   if (isReservedSubdomain(requestedSubdomain)) {
-    throw new SubdomainValidationError('Este subdomínio é reservado e não pode ser usado.')
+    throw new SubdomainValidationError('Este identificador é reservado e não pode ser usado.')
   }
 
   const { data: existing, error } = await supabase
@@ -45,7 +58,7 @@ export async function allocateUniqueSubdomain(
     .or(`subdomain.eq.${requestedSubdomain},subdomain.like.${requestedSubdomain}-%`)
 
   if (error) {
-    throw new Error(error.message ?? 'Erro ao verificar subdomínio')
+    throw new Error(error.message ?? 'Erro ao verificar identificador')
   }
 
   const taken = new Set((existing ?? []).map((row) => row.subdomain))
@@ -62,6 +75,6 @@ export async function allocateUniqueSubdomain(
   }
 
   throw new SubdomainValidationError(
-    'Não foi possível encontrar um subdomínio disponível. Tente outro nome.'
+    'Não foi possível encontrar um identificador disponível. Tente outro nome.'
   )
 }

@@ -4,6 +4,7 @@ import type { Event, Photo } from '@/types'
 import { getServerClient } from '@/lib/supabase-server'
 import EventPage from '@/components/EventPage'
 import UploadForm from '@/components/UploadForm'
+import { eventShareUrl, eventGalleryPath } from '@/lib/event-domain'
 
 export default async function UploadPage() {
   const headersList = await headers()
@@ -19,8 +20,7 @@ export default async function UploadPage() {
   }
 
   const host = headersList.get('host') ?? ''
-  const protocol = host.includes('localhost') || host.includes('lvh.me') ? 'http' : 'https'
-  const shareUrl = `${protocol}://${host}/`
+  const shareUrl = eventShareUrl(event.subdomain, host)
 
   const r2Base = (process.env.R2_PUBLIC_URL ?? '').replace(/\/$/, '')
   const supabase = getServerClient()
@@ -43,13 +43,14 @@ export default async function UploadPage() {
         event={event}
         shareUrl={shareUrl}
         initialPhotos={initialPhotos}
+        eventSlug={event.subdomain}
         showGallery={false}
         showUploadButton={false}
       >
         <div className="max-w-lg mx-auto px-5 pt-4 pb-8">
           <UploadForm event={event} />
           <Link
-            href="/"
+            href={eventGalleryPath(event.subdomain)}
             className="block text-center mt-6 text-sm text-[var(--gold-dark)] font-serif-display"
           >
             ← Voltar para a galeria

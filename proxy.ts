@@ -2,31 +2,32 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
-import { RESERVED_SUBDOMAINS } from '@/lib/subdomain'
+import { isReservedSubdomain } from '@/lib/subdomain'
 
-function extractSubdomain(hostname: string): string | null {
-  // Strip port if present (e.g. localhost:3000)
-  const host = hostname.split(':')[0]
+type EventRoute = { slug: string; section: 'gallery' | 'upload' }
 
-  // Running locally — no subdomain-based tenant
-  if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local')) {
-    return null
+function extractEventRoute(pathname: string): EventRoute | null {
+  const segments = pathname.split('/').filter(Boolean)
+  if (segments.length === 0) return null
+
+  const slug = segments[0].toLowerCase()
+  if (isReservedSubdomain(slug)) return null
+
+  if (segments.length === 1) {
+    return { slug, section: 'gallery' }
   }
 
-  const parts = host.split('.')
-  // Need at least 3 parts: subdomain.domain.tld
-  if (parts.length < 3) return null
+  if (segments.length === 2 && segments[1] === 'upload') {
+    return { slug, section: 'upload' }
+  }
 
-  const sub = parts[0].toLowerCase()
-  return RESERVED_SUBDOMAINS.has(sub) ? null : sub
+  return null
 }
 
 export async function proxy(request: NextRequest) {
-  const hostname = request.headers.get('host') || ''
-  const subdomain = extractSubdomain(hostname)
+  const route = extractEventRoute(request.nextUrl.pathname)
 
-  // No event subdomain — let the request pass unchanged
-  if (!subdomain) {
+  if (!route) {
     return NextResponse.next()
   }
 
@@ -38,12 +39,11 @@ export async function proxy(request: NextRequest) {
   const { data: event, error } = await supabase
     .from('events')
     .select('*')
-    .eq('subdomain', subdomain)
+    .eq('subdomain', route.slug)
     .eq('is_active', true)
     .single()
 
   if (error || !event) {
-    // Rewrite to the not-found page (keeps the URL intact)
     const url = request.nextUrl.clone()
     url.pathname = '/not-found'
     return NextResponse.rewrite(url)
@@ -55,9 +55,13 @@ export async function proxy(request: NextRequest) {
     slideshow_transition: event.slideshow_transition ?? 'cross_dissolve',
   }
 
-  const response = NextResponse.next()
+  const rewriteUrl = request.nextUrl.clone()
+  rewriteUrl.pathname = route.section === 'upload' ? '/upload' : '/'
+
+  const response = NextResponse.rewrite(rewriteUrl)
   response.headers.set('x-event-id', event.id)
   response.headers.set('x-event-data', JSON.stringify(eventPayload))
+  response.headers.set('x-event-slug', route.slug)
   return response
 }
 

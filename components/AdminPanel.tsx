@@ -17,7 +17,7 @@ import {
   SLIDESHOW_TRANSITIONS,
   type SlideshowTransition,
 } from '@/lib/slideshow-transition'
-import { EVENT_DOMAIN } from '@/lib/event-domain'
+import { APP_HOST, eventUrl } from '@/lib/event-domain'
 
 const BILLING_CONTACT =
   process.env.NEXT_PUBLIC_BILLING_CONTACT?.trim() || 'contato@boracasar.net.br'
@@ -254,7 +254,7 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
         const requested = String(data.requestedSubdomain || eventForm.subdomain)
         const finalSubdomain = String(data.subdomain || created.subdomain)
         setSubdomainNotice(
-          `O subdomínio "${requested}" já existia. Seu evento foi criado em ${finalSubdomain}.${EVENT_DOMAIN}.`
+          `O identificador "${requested}" já existia. Seu evento foi criado em ${eventUrl(finalSubdomain)}.`
         )
       } else {
         setSubdomainNotice('')
@@ -658,7 +658,7 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
                         {ev.client_name}
                       </p>
                       <p className="text-[var(--text-muted)] text-sm truncate">
-                        {ev.subdomain}.{EVENT_DOMAIN} ·{' '}
+                        {eventUrl(ev.subdomain)} ·{' '}
                         {new Date(ev.event_date + 'T00:00:00').toLocaleDateString('pt-BR')}
                       </p>
                     </div>
@@ -688,11 +688,11 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
             {tab === 'new' && (
               <div>
                 <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-1 block">
-                  Subdomínio *
+                  Link do evento *
                 </label>
                 <input
                   required
-                  placeholder="ex: casamentojoaoana"
+                  placeholder="ex: luana-e-marco"
                   value={eventForm.subdomain}
                   onChange={(e) =>
                     setEventForm({
@@ -703,7 +703,7 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
                   className={inputClass}
                 />
                 <p className="text-xs text-[var(--text-muted)] mt-1 font-serif-display">
-                  {eventForm.subdomain || 'subdominio'}.{EVENT_DOMAIN}
+                  {APP_HOST}/{eventForm.subdomain || 'identificador'}
                 </p>
               </div>
             )}

@@ -1,6 +1,6 @@
 # Live Photo Favor
 
-A multi-tenant wedding photo-sharing web app. Guests scan a QR code, land on a branded subdomain (e.g. `smithwedding.yourdomain.com`), upload photos from their phone, and watch a live gallery update in real time.
+A multi-tenant wedding photo-sharing web app. Guests scan a QR code, land on a branded event page (e.g. `foto-lembranca.boracasar.net.br/luana-e-marco`), upload photos from their phone, and watch a live gallery update in real time.
 
 ## Tech Stack
 
@@ -71,13 +71,13 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Visit `http://localhost:3000`. In development there's no subdomain, so the home page shows a placeholder. To test multi-tenancy locally, add an entry to `/etc/hosts`:
+Visit `http://localhost:3000`. The home page shows a placeholder. To test an event locally, visit a path like:
 
 ```
-127.0.0.1 testwedding.localhost
+http://localhost:3000/luana-e-marco
 ```
 
-Then visit `http://testwedding.localhost:3000` — but note: subdomain detection requires 3 hostname parts (e.g. `sub.domain.tld`), so a production deployment on Vercel is the best way to test the full flow.
+(Create the event first via `/admin` or Supabase.)
 
 ---
 
@@ -86,10 +86,9 @@ Then visit `http://testwedding.localhost:3000` — but note: subdomain detection
 1. Push this repo to GitHub.
 2. Import into [vercel.com](https://vercel.com).
 3. Add all env vars in **Project Settings → Environment Variables**.
-4. Under **Domains**, add your root domain (e.g. `yourdomain.com`).
-5. Add a **wildcard subdomain**: `*.yourdomain.com` pointing to the same deployment.
+4. Under **Domains**, add your app host (e.g. `foto-lembranca.boracasar.net.br`).
 
-Vercel automatically supports wildcard domains — the middleware handles routing each subdomain to the correct event.
+No wildcard subdomain is required — each event uses a path on the same domain (e.g. `/luana-e-marco`). The proxy layer routes path segments to the correct event.
 
 ---
 
@@ -97,7 +96,7 @@ Vercel automatically supports wildcard domains — the middleware handles routin
 
 ### Option A — Admin UI
 
-Visit `/admin` on your domain (or `admin.yourdomain.com/admin`), log in with your `ADMIN_PASSWORD`, and fill out the **New Event** form.
+Visit `/admin` on your app domain (e.g. `foto-lembranca.boracasar.net.br/admin`), log in, and fill out the **New Event** form.
 
 ### Option B — Supabase Dashboard
 
@@ -105,10 +104,10 @@ Insert a row directly into the `events` table:
 
 ```sql
 insert into public.events (subdomain, client_name, event_date, primary_color, welcome_message)
-values ('smithwedding', 'Sarah & James Smith', '2026-09-14', '#D4A5A5', 'Thank you for celebrating with us!');
+values ('luana-e-marco', 'Luana & Marco', '2026-09-14', '#D4A5A5', 'Obrigado por celebrar conosco!');
 ```
 
-The event will be live immediately at `smithwedding.yourdomain.com`.
+The event will be live immediately at `https://foto-lembranca.boracasar.net.br/luana-e-marco`.
 
 ---
 

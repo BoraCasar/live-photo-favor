@@ -5,8 +5,7 @@
         "origins": [
           "http://localhost:3000",
           "http://127.0.0.1:3000",
-          "https://foto-lembranca.boracasar.net.br",
-          "https://*.boracasar.net.br"
+          "https://foto-lembranca.boracasar.net.br"
         ],
         "methods": ["GET", "PUT", "HEAD"],
         "headers": ["Content-Type", "Content-Length", "x-amz-checksum-crc32"]

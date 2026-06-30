@@ -8,7 +8,7 @@ const EXACT: Record<string, string> = {
   'eventId required': 'O eventId é obrigatório.',
   'approved (boolean) required': 'O campo approved (booleano) é obrigatório.',
   'subdomain, client_name, and event_date are required':
-    'Subdomínio, nome do evento e data são obrigatórios.',
+    'Link do evento, nome do evento e data são obrigatórios.',
   'Nada para atualizar': 'Nada para atualizar.',
   'E-mail é obrigatório': 'E-mail é obrigatório.',
   'Token e nova senha são obrigatórios': 'Token e nova senha são obrigatórios.',
@@ -19,11 +19,11 @@ const EXACT: Record<string, string> = {
   'Assinatura inativa. Entre em contato para ativar seu plano mensal.':
     'Assinatura inativa. Entre em contato para ativar seu plano mensal.',
   'Status de assinatura inválido': 'Status de assinatura inválido.',
-  'Subdomínio inválido.': 'Subdomínio inválido.',
+  'Subdomínio inválido.': 'Identificador inválido.',
   'Este subdomínio é reservado e não pode ser usado.':
-    'Este subdomínio é reservado e não pode ser usado.',
+    'Este identificador é reservado e não pode ser usado.',
   'Não foi possível encontrar um subdomínio disponível. Tente outro nome.':
-    'Não foi possível encontrar um subdomínio disponível. Tente outro nome.',
+    'Não foi possível encontrar um identificador disponível. Tente outro nome.',
 }
 
 export function translateApiError(message: string): string {
@@ -37,7 +37,7 @@ export function translateApiError(message: string): string {
   if (lower.includes('unauthorized')) return 'Não autorizado.'
   if (lower.includes('invalid json')) return 'JSON inválido.'
   if (lower.includes('duplicate key') && lower.includes('subdomain')) {
-    return 'Este subdomínio já está em uso.'
+    return 'Este identificador já está em uso.'
   }
   if (lower.includes('duplicate key') && lower.includes('email')) {
     return 'Este e-mail já está cadastrado.'

@@ -3,6 +3,7 @@ import { headers } from 'next/headers'
 import type { Event, Photo } from '@/types'
 import { getServerClient } from '@/lib/supabase-server'
 import EventPage from '@/components/EventPage'
+import { eventShareUrl } from '@/lib/event-domain'
 import { APP_NAME } from '@/lib/theme'
 
 export const dynamic = 'force-dynamic'
@@ -52,13 +53,17 @@ export default async function HomePage() {
   }
 
   const host = headersList.get('host') ?? ''
-  const protocol = host.includes('localhost') || host.includes('lvh.me') ? 'http' : 'https'
-  const shareUrl = `${protocol}://${host}/`
+  const shareUrl = eventShareUrl(event.subdomain, host)
   const initialPhotos = await loadEventPhotos(event.id)
 
   return (
     <main className="min-h-screen bg-[var(--cream)]">
-      <EventPage event={event} shareUrl={shareUrl} initialPhotos={initialPhotos} />
+      <EventPage
+        event={event}
+        shareUrl={shareUrl}
+        initialPhotos={initialPhotos}
+        eventSlug={event.subdomain}
+      />
     </main>
   )
 }
