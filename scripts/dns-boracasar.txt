@@ -1,0 +1,11 @@
+# DNS records for boracasar.net.br (at Cloudflare or your registrar)
+# Point to targets shown in Vercel → Project → Settings → Domains after adding domains.
+
+# Admin + API
+foto-lembranca.boracasar.net.br  →  CNAME  cname.vercel-dns.com  (use exact target from Vercel UI)
+
+# All guest event subdomains (casamento.boracasar.net.br, etc.)
+*.boracasar.net.br               →  CNAME  cname.vercel-dns.com  (wildcard — Vercel Pro may be required)
+
+# Keep apex on your main marketing site (do NOT point boracasar.net.br at this app unless intended)
+# boracasar.net.br               →  (existing WordPress / static host)
