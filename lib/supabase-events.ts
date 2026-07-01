@@ -122,7 +122,7 @@ export async function listAdminEvents(supabase: EventsClient, adminId: string) {
     const fallback = await supabase
       .from('events')
       .select(
-        'id, subdomain, client_name, event_date, logo_url, welcome_message, is_active, admin_id, created_at, primary_color'
+        'id, public_token, subdomain, client_name, event_date, logo_url, welcome_message, is_active, admin_id, created_at, primary_color'
       )
       .eq('admin_id', adminId)
       .order('event_date', { ascending: false })

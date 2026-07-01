@@ -10,7 +10,7 @@ import { eventGalleryPath, eventUploadPath } from '@/lib/event-domain'
 interface Props {
   event: Event
   shareUrl: string
-  eventSlug: string
+  eventToken: string
   hasPhotos?: boolean
   onOpenPresentation?: () => void
 }
@@ -18,7 +18,7 @@ interface Props {
 export default function EventHeader({
   event,
   shareUrl,
-  eventSlug,
+  eventToken,
   hasPhotos = false,
   onOpenPresentation,
 }: Props) {
@@ -87,14 +87,14 @@ export default function EventHeader({
               ✕
             </button>
             <Link
-              href={eventGalleryPath(eventSlug)}
+              href={eventGalleryPath(eventToken)}
               onClick={() => setMenuOpen(false)}
               className="py-3 px-4 rounded-xl font-serif-display text-lg text-[var(--text)] hover:bg-[var(--gold-light)]/30"
             >
               Galeria
             </Link>
             <Link
-              href={eventUploadPath(eventSlug)}
+              href={eventUploadPath(eventToken)}
               onClick={() => setMenuOpen(false)}
               className="py-3 px-4 rounded-xl font-serif-display text-lg text-[var(--text)] hover:bg-[var(--gold-light)]/30"
             >

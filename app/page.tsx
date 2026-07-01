@@ -53,7 +53,7 @@ export default async function HomePage() {
   }
 
   const host = headersList.get('host') ?? ''
-  const shareUrl = eventShareUrl(event.subdomain, host)
+  const shareUrl = eventShareUrl(event.public_token, host)
   const initialPhotos = await loadEventPhotos(event.id)
 
   return (
@@ -62,7 +62,7 @@ export default async function HomePage() {
         event={event}
         shareUrl={shareUrl}
         initialPhotos={initialPhotos}
-        eventSlug={event.subdomain}
+        eventToken={event.public_token}
       />
     </main>
   )

@@ -61,7 +61,8 @@ export interface Database {
       events: {
         Row: {
           id: string
-          subdomain: string
+          public_token: string
+          subdomain: string | null
           client_name: string
           event_date: string
           primary_color: string
@@ -75,7 +76,8 @@ export interface Database {
         }
         Insert: {
           id?: string
-          subdomain: string
+          public_token?: string
+          subdomain?: string | null
           client_name: string
           event_date: string
           primary_color?: string
@@ -89,7 +91,8 @@ export interface Database {
         }
         Update: {
           id?: string
-          subdomain?: string
+          public_token?: string
+          subdomain?: string | null
           client_name?: string
           event_date?: string
           primary_color?: string

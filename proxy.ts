@@ -2,23 +2,23 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
-import { isReservedSubdomain } from '@/lib/subdomain'
+import { isPublicEventToken } from '@/lib/event-token'
 
-type EventRoute = { slug: string; section: 'gallery' | 'upload' }
+type EventRoute = { token: string; section: 'gallery' | 'upload' }
 
 function extractEventRoute(pathname: string): EventRoute | null {
   const segments = pathname.split('/').filter(Boolean)
   if (segments.length === 0) return null
 
-  const slug = segments[0].toLowerCase()
-  if (isReservedSubdomain(slug)) return null
+  const token = segments[0]
+  if (!isPublicEventToken(token)) return null
 
   if (segments.length === 1) {
-    return { slug, section: 'gallery' }
+    return { token, section: 'gallery' }
   }
 
   if (segments.length === 2 && segments[1] === 'upload') {
-    return { slug, section: 'upload' }
+    return { token, section: 'upload' }
   }
 
   return null
@@ -39,7 +39,7 @@ export async function proxy(request: NextRequest) {
   const { data: event, error } = await supabase
     .from('events')
     .select('*')
-    .eq('subdomain', route.slug)
+    .eq('public_token', route.token)
     .eq('is_active', true)
     .single()
 
@@ -61,19 +61,12 @@ export async function proxy(request: NextRequest) {
   const response = NextResponse.rewrite(rewriteUrl)
   response.headers.set('x-event-id', event.id)
   response.headers.set('x-event-data', JSON.stringify(eventPayload))
-  response.headers.set('x-event-slug', route.slug)
+  response.headers.set('x-event-token', route.token)
   return response
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization)
-     * - favicon.ico
-     * - public folder files
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

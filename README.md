@@ -1,6 +1,6 @@
 # Live Photo Favor
 
-A multi-tenant wedding photo-sharing web app. Guests scan a QR code, land on a branded event page (e.g. `foto-lembranca.boracasar.net.br/luana-e-marco`), upload photos from their phone, and watch a live gallery update in real time.
+A multi-tenant wedding photo-sharing web app. Guests scan a QR code, land on a branded event page (e.g. `album.boracasar.net.br/luana-e-marco`), upload photos from their phone, and watch a live gallery update in real time.
 
 ## Tech Stack
 
@@ -71,10 +71,10 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Visit `http://localhost:3000`. The home page shows a placeholder. To test an event locally, visit a path like:
+Visit `http://localhost:3000`. The home page shows a placeholder. To test an event locally, visit a path with its public token:
 
 ```
-http://localhost:3000/luana-e-marco
+http://localhost:3000/{event-uuid}
 ```
 
 (Create the event first via `/admin` or Supabase.)
@@ -86,9 +86,9 @@ http://localhost:3000/luana-e-marco
 1. Push this repo to GitHub.
 2. Import into [vercel.com](https://vercel.com).
 3. Add all env vars in **Project Settings → Environment Variables**.
-4. Under **Domains**, add your app host (e.g. `foto-lembranca.boracasar.net.br`).
+4. Under **Domains**, add your app host (e.g. `album.boracasar.net.br`).
 
-No wildcard subdomain is required — each event uses a path on the same domain (e.g. `/luana-e-marco`). The proxy layer routes path segments to the correct event.
+No wildcard subdomain is required — each event uses a unique UUID path on the same domain (e.g. `/a1b2c3d4-...`). The proxy layer routes those paths to the correct event.
 
 ---
 
@@ -96,18 +96,18 @@ No wildcard subdomain is required — each event uses a path on the same domain 
 
 ### Option A — Admin UI
 
-Visit `/admin` on your app domain (e.g. `foto-lembranca.boracasar.net.br/admin`), log in, and fill out the **New Event** form.
+Visit `/admin` on your app domain (e.g. `album.boracasar.net.br/admin`), log in, and fill out the **New Event** form.
 
 ### Option B — Supabase Dashboard
 
 Insert a row directly into the `events` table:
 
 ```sql
-insert into public.events (subdomain, client_name, event_date, primary_color, welcome_message)
-values ('luana-e-marco', 'Luana & Marco', '2026-09-14', '#D4A5A5', 'Obrigado por celebrar conosco!');
+insert into public.events (client_name, event_date, primary_color, welcome_message)
+values ('Luana & Marco', '2026-09-14', '#D4A5A5', 'Obrigado por celebrar conosco!');
 ```
 
-The event will be live immediately at `https://foto-lembranca.boracasar.net.br/luana-e-marco`.
+The event will be live at `https://album.boracasar.net.br/{public_token}` (UUID generated automatically).
 
 ---
 

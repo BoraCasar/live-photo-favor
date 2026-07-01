@@ -17,7 +17,7 @@ import {
   SLIDESHOW_TRANSITIONS,
   type SlideshowTransition,
 } from '@/lib/slideshow-transition'
-import { APP_HOST, eventUrl } from '@/lib/event-domain'
+import { eventUrl } from '@/lib/event-domain'
 
 const BILLING_CONTACT =
   process.env.NEXT_PUBLIC_BILLING_CONTACT?.trim() || 'contato@boracasar.net.br'
@@ -81,7 +81,6 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
   const [resetTokenValue, setResetTokenValue] = useState(resetToken ?? '')
 
   const [eventForm, setEventForm] = useState({
-    subdomain: '',
     client_name: '',
     event_date: '',
     welcome_message: '',
@@ -92,7 +91,8 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null)
   const [formStatus, setFormStatus] = useState<'idle' | 'saving' | 'done' | 'error'>('idle')
-  const [subdomainNotice, setSubdomainNotice] = useState('')
+  const [qrEvent, setQrEvent] = useState<Event | null>(null)
+  const [copiedEventId, setCopiedEventId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!logoFile) {
@@ -226,6 +226,22 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
     setView('login')
   }
 
+  const copyEventLink = async (ev: Event, e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      await navigator.clipboard.writeText(eventUrl(ev.public_token))
+      setCopiedEventId(ev.id)
+      setTimeout(() => setCopiedEventId(null), 2000)
+    } catch {
+      setError('Não foi possível copiar o link.')
+    }
+  }
+
+  const openQrModal = (ev: Event, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setQrEvent(ev)
+  }
+
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault()
     const intervalErr = validateSlideshowIntervalInput(eventForm.slideshow_interval_seconds)
@@ -250,16 +266,6 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
       const data = await parseResponse(res)
       const created = data.event as Event
 
-      if (data.subdomainAdjusted) {
-        const requested = String(data.requestedSubdomain || eventForm.subdomain)
-        const finalSubdomain = String(data.subdomain || created.subdomain)
-        setSubdomainNotice(
-          `O identificador "${requested}" já existia. Seu evento foi criado em ${eventUrl(finalSubdomain)}.`
-        )
-      } else {
-        setSubdomainNotice('')
-      }
-
       if (logoFile) {
         const formData = new FormData()
         formData.append('file', logoFile)
@@ -269,7 +275,6 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
 
       setFormStatus('done')
       setEventForm({
-        subdomain: '',
         client_name: '',
         event_date: '',
         welcome_message: '',
@@ -280,7 +285,6 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
       await loadEvents()
       setTab('events')
       setTimeout(() => setFormStatus('idle'), 2000)
-      setTimeout(() => setSubdomainNotice(''), 8000)
     } catch (err: unknown) {
       setFormStatus('error')
       setError(err instanceof Error ? err.message : 'Erro ao criar evento')
@@ -334,7 +338,6 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
   const startEdit = (ev: Event) => {
     setEditingEvent(ev)
     setEventForm({
-      subdomain: ev.subdomain,
       client_name: ev.client_name,
       event_date: ev.event_date,
       welcome_message: ev.welcome_message ?? '',
@@ -596,7 +599,6 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
               if (key === 'new') {
                 setEditingEvent(null)
                 setEventForm({
-        subdomain: '',
         client_name: '',
         event_date: '',
         welcome_message: '',
@@ -619,11 +621,6 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
       </div>
 
       <div className="max-w-2xl mx-auto px-5 py-6">
-        {subdomainNotice && tab === 'events' && (
-          <p className="text-green-700 text-sm mb-4 font-serif-display bg-green-50 border border-green-100 rounded-xl px-4 py-3">
-            {subdomainNotice}
-          </p>
-        )}
         {error && tab === 'events' && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
         {tab === 'events' && (
@@ -638,38 +635,88 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
             ) : (
               <div className="flex flex-col gap-3">
                 {events.map((ev) => (
-                  <button
+                  <div
                     key={ev.id}
-                    type="button"
-                    onClick={() => startEdit(ev)}
-                    className="bg-white rounded-2xl shadow-sm border border-[var(--grid-line)] p-5 flex items-center gap-4 text-left w-full hover:border-[var(--gold-light)] transition"
+                    className="bg-white rounded-2xl shadow-sm border border-[var(--grid-line)] p-5 flex items-center gap-3"
                   >
-                    {ev.logo_url ? (
-                      <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-[var(--cream)]">
-                        <Image src={ev.logo_url} alt="" fill className="object-contain" unoptimized />
-                      </div>
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-[var(--gold-light)]/40 flex items-center justify-center flex-shrink-0 font-script text-[var(--gold-dark)]">
-                        FL
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-serif-display font-semibold text-[var(--text)] truncate">
-                        {ev.client_name}
-                      </p>
-                      <p className="text-[var(--text-muted)] text-sm truncate">
-                        {eventUrl(ev.subdomain)} ·{' '}
-                        {new Date(ev.event_date + 'T00:00:00').toLocaleDateString('pt-BR')}
-                      </p>
-                    </div>
-                    <span
-                      className={`text-xs font-semibold px-2 py-1 rounded-full flex-shrink-0 ${
-                        ev.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                      }`}
+                    <button
+                      type="button"
+                      onClick={() => startEdit(ev)}
+                      className="flex items-center gap-4 text-left flex-1 min-w-0 hover:opacity-80 transition"
                     >
-                      {ev.is_active ? 'Ativo' : 'Inativo'}
-                    </span>
-                  </button>
+                      {ev.logo_url ? (
+                        <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-[var(--cream)]">
+                          <Image src={ev.logo_url} alt="" fill className="object-contain" unoptimized />
+                        </div>
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-[var(--gold-light)]/40 flex items-center justify-center flex-shrink-0 font-script text-[var(--gold-dark)]">
+                          FL
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-serif-display font-semibold text-[var(--text)] truncate">
+                          {ev.client_name}
+                        </p>
+                        <p className="text-[var(--text-muted)] text-sm truncate">
+                          {new Date(ev.event_date + 'T00:00:00').toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
+                    </button>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => void copyEventLink(ev, e)}
+                        className="p-2.5 rounded-xl text-[var(--text-muted)] hover:bg-[var(--gold-light)]/30 hover:text-[var(--gold-dark)] transition"
+                        aria-label="Copiar link do evento"
+                        title="Copiar link"
+                      >
+                        {copiedEventId === ev.id ? (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+                            <path
+                              d="M5 13l4 4L19 7"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        ) : (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+                            <path
+                              d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            <path
+                              d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => openQrModal(ev, e)}
+                        className="p-2.5 rounded-xl text-[var(--text-muted)] hover:bg-[var(--gold-light)]/30 hover:text-[var(--gold-dark)] transition"
+                        aria-label="Ver QR code"
+                        title="QR code"
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+                          <path
+                            d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 3h3v3h-3v-3zm3-3h3v3h-3v-3zm-3 3h3v3h-3v-3z"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
@@ -685,27 +732,10 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
               {tab === 'new' ? 'Criar Novo Evento' : 'Editar Evento'}
             </h2>
 
-            {tab === 'new' && (
-              <div>
-                <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mb-1 block">
-                  Link do evento *
-                </label>
-                <input
-                  required
-                  placeholder="ex: luana-e-marco"
-                  value={eventForm.subdomain}
-                  onChange={(e) =>
-                    setEventForm({
-                      ...eventForm,
-                      subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''),
-                    })
-                  }
-                  className={inputClass}
-                />
-                <p className="text-xs text-[var(--text-muted)] mt-1 font-serif-display">
-                  {APP_HOST}/{eventForm.subdomain || 'identificador'}
-                </p>
-              </div>
+            {tab === 'edit' && editingEvent && (
+              <p className="text-xs text-[var(--text-muted)] font-serif-display break-all">
+                Link: {eventUrl(editingEvent.public_token)}
+              </p>
             )}
 
             <div>
@@ -844,6 +874,63 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
           </form>
         )}
       </div>
+
+      {qrEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setQrEvent(null)}
+            aria-hidden
+          />
+          <div
+            className="relative bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full text-center"
+            role="dialog"
+            aria-labelledby="qr-modal-title"
+          >
+            <button
+              type="button"
+              onClick={() => setQrEvent(null)}
+              className="absolute top-4 right-4 text-[var(--text-muted)] p-1"
+              aria-label="Fechar"
+            >
+              ✕
+            </button>
+            <h3
+              id="qr-modal-title"
+              className="font-serif-display font-semibold text-lg text-[var(--text)] mb-1 pr-8"
+            >
+              {qrEvent.client_name}
+            </h3>
+            <p className="text-xs text-[var(--text-muted)] font-serif-display mb-5 break-all px-2">
+              {eventUrl(qrEvent.public_token)}
+            </p>
+            <div className="inline-block p-4 bg-white border border-[var(--grid-line)] rounded-2xl mb-4">
+              <Image
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(eventUrl(qrEvent.public_token))}`}
+                alt="QR code do evento"
+                width={320}
+                height={320}
+                className="w-64 h-64 sm:w-80 sm:h-80 object-contain"
+                unoptimized
+              />
+            </div>
+            <p className="text-sm text-[var(--text-muted)] font-serif-display mb-4">
+              Salve ou compartilhe este QR code com os convidados.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                void navigator.clipboard.writeText(eventUrl(qrEvent.public_token))
+                setCopiedEventId(qrEvent.id)
+                setTimeout(() => setCopiedEventId(null), 2000)
+              }}
+              className="btn-gold w-full py-3 rounded-xl font-serif-display font-semibold text-sm"
+            >
+              {copiedEventId === qrEvent.id ? 'Link copiado!' : 'Copiar link'}
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

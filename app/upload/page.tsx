@@ -20,7 +20,7 @@ export default async function UploadPage() {
   }
 
   const host = headersList.get('host') ?? ''
-  const shareUrl = eventShareUrl(event.subdomain, host)
+  const shareUrl = eventShareUrl(event.public_token, host)
 
   const r2Base = (process.env.R2_PUBLIC_URL ?? '').replace(/\/$/, '')
   const supabase = getServerClient()
@@ -43,14 +43,14 @@ export default async function UploadPage() {
         event={event}
         shareUrl={shareUrl}
         initialPhotos={initialPhotos}
-        eventSlug={event.subdomain}
+        eventToken={event.public_token}
         showGallery={false}
         showUploadButton={false}
       >
         <div className="max-w-lg mx-auto px-5 pt-4 pb-8">
           <UploadForm event={event} />
           <Link
-            href={eventGalleryPath(event.subdomain)}
+            href={eventGalleryPath(event.public_token)}
             className="block text-center mt-6 text-sm text-[var(--gold-dark)] font-serif-display"
           >
             ← Voltar para a galeria

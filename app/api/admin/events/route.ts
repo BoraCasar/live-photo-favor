@@ -7,11 +7,6 @@ import { apiError } from '@/lib/api-errors'
 import { parseSlideshowInterval } from '@/lib/slideshow-interval'
 import { parseSlideshowTransition } from '@/lib/slideshow-transition'
 import { putObject, getPublicUrl } from '@/lib/r2'
-import {
-  allocateUniqueSubdomain,
-  isSubdomainDuplicateError,
-  SubdomainValidationError,
-} from '@/lib/subdomain'
 
 async function requireSubscribedAdmin() {
   const admin = await getAdminFromSession()
@@ -62,9 +57,10 @@ export async function POST(request: Request) {
     return apiError('Invalid JSON', 400)
   }
 
-  const { subdomain, client_name, event_date, welcome_message, slideshow_interval_seconds, slideshow_transition } = body
-  if (!subdomain || !client_name || !event_date) {
-    return apiError('subdomain, client_name, and event_date are required', 400)
+  const { client_name, event_date, welcome_message, slideshow_interval_seconds, slideshow_transition } =
+    body
+  if (!client_name || !event_date) {
+    return apiError('client_name and event_date are required', 400)
   }
 
   const interval = parseSlideshowInterval(slideshow_interval_seconds)
@@ -72,10 +68,7 @@ export async function POST(request: Request) {
 
   try {
     const supabase = getServerClient()
-    let allocation = await allocateUniqueSubdomain(supabase, String(subdomain))
-
-    const insertPayload = {
-      subdomain: allocation.subdomain,
+    const { data, error } = await insertEventRow(supabase, {
       client_name: String(client_name),
       event_date: String(event_date),
       welcome_message: welcome_message ? String(welcome_message) : null,
@@ -83,32 +76,11 @@ export async function POST(request: Request) {
       slideshow_transition: transition,
       admin_id: admin.id,
       is_active: true,
-    }
-
-    let { data, error } = await insertEventRow(supabase, insertPayload)
-
-    if (error && isSubdomainDuplicateError(error)) {
-      allocation = await allocateUniqueSubdomain(supabase, String(subdomain))
-      ;({ data, error } = await insertEventRow(supabase, {
-        ...insertPayload,
-        subdomain: allocation.subdomain,
-      }))
-    }
+    })
 
     if (error) return apiError(error.message ?? 'Erro ao salvar evento', 500)
-    return NextResponse.json(
-      {
-        event: data,
-        subdomain: allocation.subdomain,
-        subdomainAdjusted: allocation.adjusted,
-        requestedSubdomain: allocation.requestedSubdomain,
-      },
-      { status: 201 }
-    )
+    return NextResponse.json({ event: data }, { status: 201 })
   } catch (err) {
-    if (err instanceof SubdomainValidationError) {
-      return apiError(err.message, 400)
-    }
     return apiError(supabaseConnectionErrorMessage(err), 500)
   }
 }

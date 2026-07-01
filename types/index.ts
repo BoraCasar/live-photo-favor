@@ -18,7 +18,8 @@ export interface PlatformAdmin {
 
 export interface Event {
   id: string
-  subdomain: string
+  public_token: string
+  subdomain?: string | null
   client_name: string
   event_date: string
   logo_url: string | null

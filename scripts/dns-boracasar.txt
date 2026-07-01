@@ -2,11 +2,11 @@
 # Point to targets shown in Vercel → Project → Settings → Domains after adding domains.
 
 # Admin + guest events (single domain — no wildcard needed)
-foto-lembranca.boracasar.net.br  →  CNAME  cname.vercel-dns.com  (use exact target from Vercel UI)
+album.boracasar.net.br  →  CNAME  cname.vercel-dns.com  (use exact target from Vercel UI)
 
-# Guest events use path-based URLs, e.g.:
-#   https://foto-lembranca.boracasar.net.br/luana-e-marco
-#   https://foto-lembranca.boracasar.net.br/luana-e-marco/upload
+# Guest events use UUID paths, e.g.:
+#   https://album.boracasar.net.br/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+#   https://album.boracasar.net.br/a1b2c3d4-e5f6-7890-abcd-ef1234567890/upload
 
 # Keep apex on your main marketing site (do NOT point boracasar.net.br at this app unless intended)
 # boracasar.net.br               →  (existing WordPress / static host)

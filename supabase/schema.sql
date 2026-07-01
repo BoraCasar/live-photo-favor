@@ -9,7 +9,8 @@ create extension if not exists "pgcrypto";
 -- ─── events ────────────────────────────────────────────────
 create table if not exists public.events (
   id              uuid primary key default gen_random_uuid(),
-  subdomain       text unique not null,
+  public_token    uuid unique not null default gen_random_uuid(),
+  subdomain       text unique,
   client_name     text not null,
   event_date      date not null,
   primary_color   text not null default '#8B5CF6',

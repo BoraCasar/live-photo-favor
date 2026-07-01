@@ -7,8 +7,8 @@ const EXACT: Record<string, string> = {
   'id required': 'O id é obrigatório.',
   'eventId required': 'O eventId é obrigatório.',
   'approved (boolean) required': 'O campo approved (booleano) é obrigatório.',
-  'subdomain, client_name, and event_date are required':
-    'Link do evento, nome do evento e data são obrigatórios.',
+  'client_name and event_date are required':
+    'Nome do evento e data são obrigatórios.',
   'Nada para atualizar': 'Nada para atualizar.',
   'E-mail é obrigatório': 'E-mail é obrigatório.',
   'Token e nova senha são obrigatórios': 'Token e nova senha são obrigatórios.',
