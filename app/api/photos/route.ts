@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerClient } from '@/lib/supabase-server'
 import { getPublicUrl } from '@/lib/r2'
+import { sortPhotos } from '@/lib/sort-photos'
 import { apiError } from '@/lib/api-errors'
 
 // GET /api/photos?eventId=xxx — fallback fetch if Realtime isn't connected
@@ -18,12 +19,13 @@ export async function GET(request: Request) {
     .select('*')
     .eq('event_id', eventId)
     .eq('approved', true)
-    .order('created_at', { ascending: false })
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true })
     .limit(200)
 
   if (error) return apiError(error.message, 500)
 
-  const photos = (data ?? []).map((row) => ({ ...row, url: getPublicUrl(row.storage_key) }))
+  const photos = sortPhotos(data ?? []).map((row) => ({ ...row, url: getPublicUrl(row.storage_key) }))
   return NextResponse.json({ photos })
 }
 

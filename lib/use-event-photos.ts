@@ -2,20 +2,21 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { getBrowserClient } from '@/lib/supabase'
+import { sortPhotos } from '@/lib/sort-photos'
 import type { Photo } from '@/types'
 
 export function useEventPhotos(eventId: string, initialPhotos: Photo[]) {
-  const [photos, setPhotos] = useState<Photo[]>(initialPhotos)
+  const [photos, setPhotos] = useState<Photo[]>(sortPhotos(initialPhotos))
 
-  const addPhoto = useCallback((newPhoto: Photo) => {
+  const upsertPhoto = useCallback((newPhoto: Photo) => {
     setPhotos((prev) => {
-      if (prev.some((p) => p.id === newPhoto.id)) return prev
-      return [newPhoto, ...prev]
+      const without = prev.filter((p) => p.id !== newPhoto.id)
+      return sortPhotos([...without, newPhoto])
     })
   }, [])
 
   useEffect(() => {
-    setPhotos(initialPhotos)
+    setPhotos(sortPhotos(initialPhotos))
   }, [initialPhotos])
 
   useEffect(() => {
@@ -35,7 +36,7 @@ export function useEventPhotos(eventId: string, initialPhotos: Photo[]) {
         (payload) => {
           const row = payload.new as Photo
           if (!row.approved) return
-          addPhoto({ ...row, url: `${r2Base}/${row.storage_key}` })
+          upsertPhoto({ ...row, url: `${r2Base}/${row.storage_key}` })
         }
       )
       .on(
@@ -48,13 +49,27 @@ export function useEventPhotos(eventId: string, initialPhotos: Photo[]) {
         },
         (payload) => {
           const row = payload.new as Photo
-          setPhotos((prev) =>
-            row.approved
-              ? prev.map((p) =>
-                  p.id === row.id ? { ...row, url: `${r2Base}/${row.storage_key}` } : p
-                )
-              : prev.filter((p) => p.id !== row.id)
-          )
+          setPhotos((prev) => {
+            if (!row.approved) {
+              return prev.filter((p) => p.id !== row.id)
+            }
+            const without = prev.filter((p) => p.id !== row.id)
+            return sortPhotos([...without, { ...row, url: `${r2Base}/${row.storage_key}` }])
+          })
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'photos',
+          filter: `event_id=eq.${eventId}`,
+        },
+        (payload) => {
+          const row = payload.old as { id?: string }
+          if (!row.id) return
+          setPhotos((prev) => prev.filter((p) => p.id !== row.id))
         }
       )
       .subscribe()
@@ -62,7 +77,7 @@ export function useEventPhotos(eventId: string, initialPhotos: Photo[]) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [eventId, addPhoto])
+  }, [eventId, upsertPhoto])
 
   return photos
 }

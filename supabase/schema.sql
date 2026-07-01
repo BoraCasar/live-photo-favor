@@ -30,6 +30,7 @@ create table if not exists public.photos (
   guest_name  text,
   caption     text,
   approved    boolean not null default true,
+  sort_order  integer not null default 0,
   created_at  timestamptz not null default now()
 );
 

@@ -37,6 +37,7 @@ export interface Photo {
   guest_name: string | null
   caption: string | null
   approved: boolean
+  sort_order: number
   created_at: string
   url?: string
 }

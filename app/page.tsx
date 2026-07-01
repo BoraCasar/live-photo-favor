@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { headers } from 'next/headers'
 import type { Event, Photo } from '@/types'
 import { getServerClient } from '@/lib/supabase-server'
+import { sortPhotos } from '@/lib/sort-photos'
 import EventPage from '@/components/EventPage'
 import { eventShareUrl } from '@/lib/event-domain'
 import { APP_NAME } from '@/lib/theme'
@@ -16,10 +17,11 @@ async function loadEventPhotos(eventId: string): Promise<Photo[]> {
     .select('*')
     .eq('event_id', eventId)
     .eq('approved', true)
-    .order('created_at', { ascending: false })
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true })
     .limit(200)
 
-  return (rows ?? []).map((row) => ({
+  return sortPhotos(rows ?? []).map((row) => ({
     ...row,
     url: `${r2Base}/${row.storage_key}`,
   }))

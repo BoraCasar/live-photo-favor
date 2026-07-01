@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getServerClient, supabaseConnectionErrorMessage } from '@/lib/supabase-server'
+import { nextPhotoSortOrder } from '@/lib/next-photo-sort-order'
 import { apiError } from '@/lib/api-errors'
 
 export async function POST(request: Request) {
@@ -38,12 +39,15 @@ export async function POST(request: Request) {
       return apiError('Evento não encontrado', 404)
     }
 
+    const sortOrder = await nextPhotoSortOrder(supabase, eventId)
+
     const { error: dbError } = await supabase.from('photos').insert({
       event_id: eventId,
       storage_key: storageKey,
       guest_name: guestName?.trim() || null,
       caption: caption?.trim() || null,
       approved: true,
+      sort_order: sortOrder,
     })
 
     if (dbError) {

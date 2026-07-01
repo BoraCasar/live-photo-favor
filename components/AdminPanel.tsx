@@ -18,6 +18,7 @@ import {
   type SlideshowTransition,
 } from '@/lib/slideshow-transition'
 import { eventUrl } from '@/lib/event-domain'
+import AdminEventPhotos from '@/components/AdminEventPhotos'
 
 const BILLING_CONTACT =
   process.env.NEXT_PUBLIC_BILLING_CONTACT?.trim() || 'contato@boracasar.net.br'
@@ -60,7 +61,7 @@ function applySession(
 }
 
 type View = 'login' | 'forgot-password' | 'reset-password' | 'subscription-inactive' | 'dashboard'
-type Tab = 'events' | 'new' | 'edit'
+type Tab = 'events' | 'new' | 'edit' | 'photos'
 
 interface AdminPanelProps {
   resetToken?: string | null
@@ -93,6 +94,8 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
   const [formStatus, setFormStatus] = useState<'idle' | 'saving' | 'done' | 'error'>('idle')
   const [qrEvent, setQrEvent] = useState<Event | null>(null)
   const [copiedEventId, setCopiedEventId] = useState<string | null>(null)
+  const [photosEvent, setPhotosEvent] = useState<Event | null>(null)
+  const [deletingEventId, setDeletingEventId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!logoFile) {
@@ -242,6 +245,44 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
     setQrEvent(ev)
   }
 
+  const openPhotosView = (ev: Event) => {
+    setPhotosEvent(ev)
+    setError('')
+    setTab('photos')
+  }
+
+  const deleteEvent = async (ev: Event, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (
+      !window.confirm(
+        `Excluir "${ev.client_name}" permanentemente? Todas as fotos serão removidas.`
+      )
+    ) {
+      return
+    }
+
+    setDeletingEventId(ev.id)
+    setError('')
+    try {
+      const res = await fetch(`/api/admin/events?id=${ev.id}`, { method: 'DELETE' })
+      const data = await parseResponse(res)
+      void data
+      if (photosEvent?.id === ev.id) {
+        setPhotosEvent(null)
+        setTab('events')
+      }
+      if (editingEvent?.id === ev.id) {
+        setEditingEvent(null)
+        setTab('events')
+      }
+      await loadEvents()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao excluir evento')
+    } finally {
+      setDeletingEventId(null)
+    }
+  }
+
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault()
     const intervalErr = validateSlideshowIntervalInput(eventForm.slideshow_interval_seconds)
@@ -337,6 +378,7 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
 
   const startEdit = (ev: Event) => {
     setEditingEvent(ev)
+    setPhotosEvent(null)
     setEventForm({
       client_name: ev.client_name,
       event_date: ev.event_date,
@@ -590,6 +632,7 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
             ['events', 'Meus Eventos'],
             ['new', '+ Novo Evento'],
             ...(tab === 'edit' ? [['edit', 'Editar']] : []),
+            ...(tab === 'photos' && photosEvent ? [['photos', 'Fotos']] : []),
           ] as const
         ).map(([key, label]) => (
           <button
@@ -598,6 +641,7 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
             onClick={() => {
               if (key === 'new') {
                 setEditingEvent(null)
+                setPhotosEvent(null)
                 setEventForm({
         client_name: '',
         event_date: '',
@@ -606,6 +650,10 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
         slideshow_transition: DEFAULT_SLIDESHOW_TRANSITION,
       })
                 setLogoFile(null)
+              }
+              if (key === 'events') {
+                setPhotosEvent(null)
+                setEditingEvent(null)
               }
               setTab(key as Tab)
             }}
@@ -641,7 +689,7 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
                   >
                     <button
                       type="button"
-                      onClick={() => startEdit(ev)}
+                      onClick={() => openPhotosView(ev)}
                       className="flex items-center gap-4 text-left flex-1 min-w-0 hover:opacity-80 transition"
                     >
                       {ev.logo_url ? (
@@ -715,12 +763,41 @@ export default function AdminPanel({ resetToken = null }: AdminPanelProps) {
                           />
                         </svg>
                       </button>
+                      <button
+                        type="button"
+                        onClick={(e) => void deleteEvent(ev, e)}
+                        disabled={deletingEventId === ev.id}
+                        className="p-2.5 rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700 transition disabled:opacity-50"
+                        aria-label="Excluir evento"
+                        title="Excluir evento"
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+                          <path
+                            d="M6 7h12M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m2 0v11a2 2 0 01-2 2H8a2 2 0 01-2-2V7h12z"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
+        )}
+
+        {tab === 'photos' && photosEvent && (
+          <AdminEventPhotos
+            event={photosEvent}
+            onBack={() => {
+              setPhotosEvent(null)
+              setTab('events')
+            }}
+            onEdit={() => startEdit(photosEvent)}
+          />
         )}
 
         {(tab === 'new' || tab === 'edit') && (

@@ -122,6 +122,7 @@ export interface Database {
           guest_name: string | null
           caption: string | null
           approved: boolean
+          sort_order: number
           created_at: string
         }
         Insert: {
@@ -131,6 +132,7 @@ export interface Database {
           guest_name?: string | null
           caption?: string | null
           approved?: boolean
+          sort_order?: number
           created_at?: string
         }
         Update: {
@@ -140,6 +142,7 @@ export interface Database {
           guest_name?: string | null
           caption?: string | null
           approved?: boolean
+          sort_order?: number
           created_at?: string
         }
         Relationships: [

@@ -7,6 +7,7 @@ import { apiError } from '@/lib/api-errors'
 import { parseSlideshowInterval } from '@/lib/slideshow-interval'
 import { parseSlideshowTransition } from '@/lib/slideshow-transition'
 import { putObject, getPublicUrl } from '@/lib/r2'
+import { deleteEventWithAssets } from '@/lib/delete-event'
 
 async function requireSubscribedAdmin() {
   const admin = await getAdminFromSession()
@@ -193,6 +194,27 @@ export async function PUT(request: Request) {
 
     if (error) return apiError(error.message ?? 'Erro ao salvar evento', 500)
     return NextResponse.json({ event: data, logo_url: logoUrl })
+  } catch (err) {
+    return apiError(supabaseConnectionErrorMessage(err), 500)
+  }
+}
+
+export async function DELETE(request: Request) {
+  const auth = await requireSubscribedAdmin()
+  if ('error' in auth && auth.error) return auth.error
+  const admin = auth.admin!
+
+  const eventId = new URL(request.url).searchParams.get('id')
+  if (!eventId) return apiError('id required', 400)
+
+  if (!(await getOwnedEvent(eventId, admin.id))) {
+    return apiError('Evento não encontrado', 404)
+  }
+
+  try {
+    const supabase = getServerClient()
+    await deleteEventWithAssets(supabase, eventId)
+    return NextResponse.json({ ok: true })
   } catch (err) {
     return apiError(supabaseConnectionErrorMessage(err), 500)
   }

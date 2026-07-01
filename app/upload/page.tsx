@@ -2,6 +2,7 @@ import { headers } from 'next/headers'
 import Link from 'next/link'
 import type { Event, Photo } from '@/types'
 import { getServerClient } from '@/lib/supabase-server'
+import { sortPhotos } from '@/lib/sort-photos'
 import EventPage from '@/components/EventPage'
 import UploadForm from '@/components/UploadForm'
 import { eventShareUrl, eventGalleryPath } from '@/lib/event-domain'
@@ -29,10 +30,11 @@ export default async function UploadPage() {
     .select('*')
     .eq('event_id', event.id)
     .eq('approved', true)
-    .order('created_at', { ascending: false })
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true })
     .limit(200)
 
-  const initialPhotos: Photo[] = (rows ?? []).map((row) => ({
+  const initialPhotos: Photo[] = sortPhotos(rows ?? []).map((row) => ({
     ...row,
     url: `${r2Base}/${row.storage_key}`,
   }))

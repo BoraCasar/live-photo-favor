@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { putObject } from '@/lib/r2'
 import { getServerClient, supabaseConnectionErrorMessage } from '@/lib/supabase-server'
 import { checkUploadRateLimit, getUploadClientId } from '@/lib/upload-rate-limit'
+import { nextPhotoSortOrder } from '@/lib/next-photo-sort-order'
 import { apiError } from '@/lib/api-errors'
 
 export async function POST(request: Request) {
@@ -50,12 +51,15 @@ export async function POST(request: Request) {
 
     await putObject(storageKey, buffer, contentType)
 
+    const sortOrder = await nextPhotoSortOrder(supabase, eventId)
+
     const { error: dbError } = await supabase.from('photos').insert({
       event_id: eventId,
       storage_key: storageKey,
       guest_name: typeof guestName === 'string' && guestName.trim() ? guestName.trim() : null,
       caption: typeof caption === 'string' && caption.trim() ? caption.trim() : null,
       approved: true,
+      sort_order: sortOrder,
     })
 
     if (dbError) {
